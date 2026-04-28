@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Supervisor Panel — Patient Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: #070b14;
+        --surface: #0d1526;
+        --surface2: #111d35;
+        --border: rgba(0,200,255,0.12);
+        --border-bright: rgba(0,200,255,0.4);
+        --cyan: #00c8ff;
+        --cyan-dim: rgba(0,200,255,0.15);
+        --green: #00ffb0;
+        --green-dim: rgba(0,255,176,0.08);
+        --red: #ff4060;
+        --red-dim: rgba(255,64,96,0.1);
+        --amber: #ffb020;
+        --amber-dim: rgba(255,176,32,0.1);
+        --text: #c8deff;
+        --text-dim: #4a6080;
+        --mono: 'Share Tech Mono', monospace;
+        --sans: 'DM Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: var(--sans);
+        background: var(--bg);
+        min-height: 100vh;
+        color: var(--text);
+    }
+
+    body::before {
+        content: '';
+        position: fixed; inset: 0;
+        background-image: linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        z-index: 0; pointer-events: none;
+    }
+
+    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 600px; height: 600px; background: rgba(0,100,200,0.07); top: -200px; left: -200px; }
+    .orb-2 { width: 500px; height: 500px; background: rgba(0,200,150,0.05); bottom: -150px; right: -150px; }
+
+    /* ── Layout ── */
+    .layout {
+        position: relative; z-index: 10;
+        display: flex; height: 100vh; overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+        width: 260px; flex-shrink: 0;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex; flex-direction: column;
+        overflow: hidden;
+    }
+
+    .sidebar-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface2);
+    }
+
+    .sidebar-header img { height: 24px; opacity: 0.8; margin-bottom: 10px; display: block; }
+
+    .sidebar-title {
+        font-family: var(--mono); font-size: 12px; color: var(--cyan);
+        letter-spacing: 0.1em; text-shadow: 0 0 10px rgba(0,200,255,0.3);
+    }
+
+    .sidebar-sub {
+        font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+        letter-spacing: 0.08em; margin-top: 3px;
+    }
+
+    .status-dot {
+        display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+        background: var(--green); margin-right: 5px;
+        box-shadow: 0 0 5px var(--green); animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .sidebar-section-label {
+        font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+        letter-spacing: 0.12em; padding: 12px 16px 6px;
+    }
+
+    .student-list { flex: 1; overflow-y: auto; padding-bottom: 8px; }
+    .student-list::-webkit-scrollbar { width: 3px; }
+    .student-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .student-item {
+        padding: 10px 16px;
+        cursor: pointer;
+        border-left: 2px solid transparent;
+        transition: all 0.15s;
+        display: flex; align-items: center; gap: 10px;
+    }
+
+    .student-item:hover { background: rgba(0,200,255,0.04); border-left-color: rgba(0,200,255,0.3); }
+    .student-item.active { background: var(--cyan-dim); border-left-color: var(--cyan); }
+
+    .student-avatar {
+        width: 28px; height: 28px; border-radius: 4px;
+        background: var(--green-dim); border: 1px solid rgba(0,255,176,0.2);
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--mono); font-size: 9px; color: var(--green);
+        flex-shrink: 0;
+    }
+
+    .student-name {
+        font-family: var(--mono); font-size: 11px; color: var(--text);
+        letter-spacing: 0.05em;
+    }
+
+    .student-meta {
+        font-size: 10px; color: var(--text-dim); margin-top: 1px;
+    }
+
+    .session-count {
+        margin-left: auto; flex-shrink: 0;
+        font-family: var(--mono); font-size: 9px;
+        padding: 2px 6px; border-radius: 3px;
+        background: var(--cyan-dim); border: 1px solid rgba(0,200,255,0.2);
+        color: var(--cyan);
+    }
+
+    .sidebar-footer {
+        padding: 12px 16px;
+        border-top: 1px solid var(--border);
+    }
+
+    .logout-btn {
+        width: 100%;
+        font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+        padding: 7px; background: var(--red-dim);
+        border: 1px solid rgba(255,64,96,0.3); color: var(--red);
+        border-radius: 4px; cursor: pointer; transition: all 0.2s;
+    }
+    .logout-btn:hover { background: rgba(255,64,96,0.2); }
+
+    /* ── Main content ── */
+    .main {
+        flex: 1; overflow-y: auto; padding: 28px;
+        display: flex; flex-direction: column; gap: 20px;
+    }
+    .main::-webkit-scrollbar { width: 4px; }
+    .main::-webkit-scrollbar-thumb { background: var(--border); }
+
+    /* ── Empty / welcome state ── */
+    .welcome {
+        margin: auto; text-align: center;
+        font-family: var(--mono); color: var(--text-dim); line-height: 2.2;
+    }
+    .welcome .big { font-size: 40px; opacity: 0.1; margin-bottom: 12px; }
+    .welcome .title { font-size: 13px; color: var(--cyan); opacity: 0.5; letter-spacing: 0.1em; }
+
+    /* ── Student header ── */
+    .student-header {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .sh-left { display: flex; align-items: center; gap: 14px; }
+
+    .sh-avatar {
+        width: 44px; height: 44px; border-radius: 6px;
+        background: var(--green-dim); border: 1px solid rgba(0,255,176,0.25);
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--mono); font-size: 14px; color: var(--green);
+    }
+
+    .sh-name { font-family: var(--mono); font-size: 15px; color: var(--green); letter-spacing: 0.08em; }
+    .sh-meta { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+
+    .export-btn {
+        font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
+        padding: 7px 14px;
+        background: var(--cyan-dim); border: 1px solid rgba(0,200,255,0.3); color: var(--cyan);
+        border-radius: 4px; cursor: pointer; transition: all 0.2s;
+    }
+    .export-btn:hover { background: rgba(0,200,255,0.22); }
+
+    /* ── Session cards ── */
+    .sessions-label {
+        font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+        letter-spacing: 0.12em; margin-bottom: -8px;
+    }
+
+    .session-card {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 8px; overflow: hidden;
+    }
+
+    .session-card-header {
+        padding: 12px 18px;
+        background: var(--surface2); border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between;
+        cursor: pointer; user-select: none;
+        transition: background 0.15s;
+    }
+    .session-card-header:hover { background: rgba(17,29,53,0.9); }
+
+    .sch-left { display: flex; align-items: center; gap: 12px; }
+
+    .session-id {
+        font-family: var(--mono); font-size: 11px; color: var(--cyan);
+        letter-spacing: 0.08em;
+    }
+
+    .level-badge {
+        font-family: var(--mono); font-size: 9px;
+        padding: 2px 8px; border-radius: 3px;
+        background: var(--amber-dim); border: 1px solid rgba(255,176,32,0.25);
+        color: var(--amber); letter-spacing: 0.08em;
+    }
+
+    .session-date { font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
+
+    .msg-count {
+        font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+        margin-right: 10px;
+    }
+
+    .chevron {
+        font-size: 10px; color: var(--text-dim);
+        transition: transform 0.2s;
+    }
+    .chevron.open { transform: rotate(180deg); }
+
+    /* ── Transcript ── */
+    .transcript {
+        display: none;
+        padding: 16px 18px;
+        background: var(--bg);
+        border-top: 1px solid var(--border);
+        flex-direction: column; gap: 12px;
+        max-height: 480px; overflow-y: auto;
+    }
+    .transcript::-webkit-scrollbar { width: 3px; }
+    .transcript::-webkit-scrollbar-thumb { background: var(--border); }
+    .transcript.open { display: flex; }
+
+    .msg-row { display: flex; gap: 10px; align-items: flex-start; }
+    .msg-row.assistant { flex-direction: row-reverse; }
+
+    .msg-av {
+        width: 26px; height: 26px; border-radius: 4px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--mono); font-size: 9px;
+    }
+    .msg-av.user     { background: var(--green-dim); border: 1px solid rgba(0,255,176,0.25); color: var(--green); }
+    .msg-av.assistant { background: var(--cyan-dim);  border: 1px solid rgba(0,200,255,0.25); color: var(--cyan); }
+
+    .msg-bubble { max-width: 76%; }
+
+    .msg-meta {
+        font-family: var(--mono); font-size: 8px; color: var(--text-dim);
+        margin-bottom: 4px; letter-spacing: 0.06em;
+    }
+    .msg-row.assistant .msg-meta { text-align: right; }
+
+    .msg-text {
+        padding: 9px 13px; font-size: 12px; line-height: 1.6; border-radius: 6px;
+    }
+    .msg-text.user {
+        background: var(--green-dim); border: 1px solid rgba(0,255,176,0.15);
+        border-radius: 0 6px 6px 6px;
+    }
+    .msg-text.assistant {
+        background: var(--surface2); border: 1px solid var(--border-bright);
+        border-radius: 6px 0 6px 6px;
+    }
+
+    .loading {
+        font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+        text-align: center; padding: 40px; letter-spacing: 0.08em;
+        animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+    .no-sessions {
+        font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+        text-align: center; padding: 40px; letter-spacing: 0.08em;
+    }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="layout">
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <img src="https://www.royalholloway.ac.uk/images/logoRoyalHolloway2x.png" alt="Royal Holloway">
+            <div class="sidebar-title"><span class="status-dot"></span>SUPERVISOR PANEL</div>
+            <div class="sidebar-sub">PATIENT SIMULATOR</div>
+        </div>
+
+        <div class="sidebar-section-label">ASSIGNED STUDENTS</div>
+        <div class="student-list" id="studentList">
+            <div class="loading">LOADING...</div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="logout-btn" onclick="logout()">LOGOUT</button>
+        </div>
+    </div>
+
+    <div class="main" id="mainArea">
+        <div class="welcome">
+            <div class="big">⬡</div>
+            <div class="title">SELECT A STUDENT TO VIEW SESSIONS</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+let token = localStorage.getItem("token");
+if (!token) window.location.href = "/";
+
+let myUsername = null;
+let studentsData = [];   // { username, sessionCount }
+let activeStudent = null;
+
+async function init() {
+    try {
+        const res = await fetch("/me", { headers: auth() });
+        if (!res.ok) { logout(); return; }
+        const me = await res.json();
+        if (me.role !== "staff") { window.location.href = "/chat-page"; return; }
+        myUsername = me.username;
+        await loadStudents();
+    } catch { logout(); }
+}
+
+function auth() { return { "Authorization": "Bearer " + token }; }
+
+async function loadStudents() {
+    const res = await fetch("/my-students", { headers: auth() });
+    if (res.status === 401) { logout(); return; }
+    const data = await res.json();
+
+    const list = document.getElementById("studentList");
+
+    if (!data.students || data.students.length === 0) {
+        list.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:16px;text-align:center;letter-spacing:0.08em;">NO STUDENTS ASSIGNED</div>';
+        return;
+    }
+
+    const withCounts = await Promise.all(data.students.map(async (username) => {
+        try {
+            const r = await fetch(`/student-sessions/${username}`, { headers: auth() });
+            const sessions = r.ok ? await r.json() : [];
+            return { username, sessionCount: sessions.length };
+        } catch { return { username, sessionCount: 0 }; }
+    }));
+
+    studentsData = withCounts;
+    list.innerHTML = "";
+
+    withCounts.forEach(({ username, sessionCount }) => {
+        const initials = username.substring(0, 3).toUpperCase();
+        const div = document.createElement("div");
+        div.className = "student-item";
+        div.id = "student-" + username;
+        div.onclick = () => selectStudent(username);
+        div.innerHTML = `
+            <div class="student-avatar">${initials}</div>
+            <div>
+                <div class="student-name">${username}</div>
+                <div class="student-meta">Student</div>
+            </div>
+            <span class="session-count">${sessionCount}</span>
+        `;
+        list.appendChild(div);
+    });
+}
+
+async function selectStudent(username) {
+    // Highlight sidebar
+    document.querySelectorAll(".student-item").forEach(el => el.classList.remove("active"));
+    const item = document.getElementById("student-" + username);
+    if (item) item.classList.add("active");
+
+    activeStudent = username;
+    const main = document.getElementById("mainArea");
+    main.innerHTML = '<div class="loading">LOADING SESSIONS...</div>';
+
+    try {
+        const res = await fetch(`/student-sessions/${username}`, { headers: auth() });
+        if (!res.ok) { main.innerHTML = '<div class="no-sessions">FAILED TO LOAD SESSIONS</div>'; return; }
+        const sessions = await res.json();
+
+        renderStudentView(username, sessions);
+    } catch {
+        main.innerHTML = '<div class="no-sessions">NETWORK ERROR</div>';
+    }
+}
+
+// ── Render student view ───────────────────────────────────────
+function renderStudentView(username, sessions) {
+    const main = document.getElementById("mainArea");
+    main.innerHTML = "";
+
+    // Header card
+    const header = document.createElement("div");
+    header.className = "student-header";
+    header.innerHTML = `
+        <div class="sh-left">
+            <div class="sh-avatar">${username.substring(0,3).toUpperCase()}</div>
+            <div>
+                <div class="sh-name">${username}</div>
+                <div class="sh-meta">${sessions.length} SESSION${sessions.length !== 1 ? "S" : ""} · STUDENT</div>
+            </div>
+        </div>
+        <button class="export-btn" onclick="exportAll('${username}')">⬇ EXPORT ALL</button>
+    `;
+    main.appendChild(header);
+
+    if (sessions.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "no-sessions";
+        empty.textContent = "NO SESSIONS YET FOR THIS STUDENT";
+        main.appendChild(empty);
+        return;
+    }
+
+    const label = document.createElement("div");
+    label.className = "sessions-label";
+    label.textContent = "SESSION TRANSCRIPTS";
+    main.appendChild(label);
+
+    const sorted = [...sessions].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    sorted.forEach((session, idx) => {
+        const card = document.createElement("div");
+        card.className = "session-card";
+
+        const shortId = session.session_id.substring(0, 8).toUpperCase();
+        const date = new Date(session.created_at).toLocaleString("en-GB", {
+            day: "2-digit", month: "short", year: "numeric",
+            hour: "2-digit", minute: "2-digit"
+        });
+        const msgCount = session.messages.length;
+        const chevId = "chev-" + idx;
+        const transId = "trans-" + idx;
+
+        card.innerHTML = `
+            <div class="session-card-header" onclick="toggleSession(${idx})">
+                <div class="sch-left">
+                    <span class="session-id">SESSION::${shortId}</span>
+                    <span class="level-badge">${session.level.toUpperCase()}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="session-date">${date}</span>
+                    <span class="msg-count">${msgCount} MSG${msgCount !== 1 ? "S" : ""}</span>
+                    <span class="chevron" id="${chevId}">▼</span>
+                </div>
+            </div>
+            <div class="transcript" id="${transId}">
+                ${msgCount === 0
+                    ? '<div class="no-sessions" style="padding:20px;">NO MESSAGES IN THIS SESSION</div>'
+                    : session.messages.map(m => renderMessage(m)).join("")
+                }
+            </div>
+        `;
+
+        main.appendChild(card);
+    });
+
+    window._currentSessions = { username, sessions: sorted };
+}
+
+function renderMessage(msg) {
+    const isUser = msg.role === "user";
+    const label = isUser ? "CLINICIAN" : "PT-7 //";
+    const avClass = isUser ? "user" : "assistant";
+    const avLabel = isUser ? "STU" : "PT";
+    const ts = msg.timestamp
+        ? new Date(msg.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+        : "";
+
+    return `
+        <div class="msg-row ${isUser ? "" : "assistant"}">
+            <div class="msg-av ${avClass}">${avLabel}</div>
+            <div class="msg-bubble">
+                <div class="msg-meta">${label}${ts ? " · " + ts : ""}</div>
+                <div class="msg-text ${isUser ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>
+            </div>
+        </div>
+    `;
+}
+
+function toggleSession(idx) {
+    const trans = document.getElementById("trans-" + idx);
+    const chev  = document.getElementById("chev-" + idx);
+    const isOpen = trans.classList.contains("open");
+    trans.classList.toggle("open", !isOpen);
+    chev.classList.toggle("open", !isOpen);
+}
+
+function exportAll(username) {
+    if (!window._currentSessions) return;
+    const { sessions } = window._currentSessions;
+    let output = `PATIENT SIMULATOR — SESSION EXPORT\nStudent: ${username}\nExported: ${new Date().toISOString()}\n\n`;
+
+    sessions.forEach(s => {
+        output += `${"=".repeat(60)}\n`;
+        output += `Session: ${s.session_id}\nLevel: ${s.level}\nDate: ${s.created_at}\n`;
+        output += `${"=".repeat(60)}\n\n`;
+        s.messages.forEach(m => {
+            const who = m.role === "user" ? "CLINICIAN" : "PATIENT";
+            const ts  = m.timestamp ? ` [${new Date(m.timestamp).toLocaleTimeString("en-GB")}]` : "";
+            output += `${who}${ts}:\n${m.content}\n\n`;
+        });
+    });
+
+    const blob = new Blob([output], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${username}_sessions_${Date.now()}.txt`;
+    a.click();
+}
+
+function escapeHtml(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function logout() {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+}
+
+init();
+</script>
+</body>
+</html>

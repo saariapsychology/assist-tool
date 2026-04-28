@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CARE TOOL</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: #070b14;
+        --surface: #0d1526;
+        --surface2: #111d35;
+        --border: rgba(0,200,255,0.12);
+        --border-bright: rgba(0,200,255,0.4);
+        --cyan: #00c8ff;
+        --cyan-dim: rgba(0,200,255,0.15);
+        --green: #00ffb0;
+        --green-dim: rgba(0,255,176,0.1);
+        --red: #ff4060;
+        --text: #c8deff;
+        --text-dim: #4a6080;
+        --mono: 'Share Tech Mono', monospace;
+        --sans: 'DM Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: var(--sans);
+        background: var(--bg);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+        color: var(--text);
+    }
+
+    body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0,0,0,0.05) 2px,
+            rgba(0,0,0,0.05) 4px
+        );
+        pointer-events: none;
+        z-index: 999;
+    }
+
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        z-index: 0;
+    }
+
+    .orb {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(120px);
+        pointer-events: none;
+        z-index: 0;
+    }
+    .orb-1 { width: 500px; height: 500px; background: rgba(0,100,200,0.08); top: -150px; left: -150px; }
+    .orb-2 { width: 400px; height: 400px; background: rgba(0,200,150,0.06); bottom: -100px; right: -100px; }
+
+    .shell {
+        position: relative;
+        z-index: 10;
+        width: 620px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .status-bar {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-bottom: none;
+        border-radius: 8px 8px 0 0;
+        letter-spacing: 0.05em;
+    }
+
+    .status-dot {
+        display: inline-block;
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: var(--green);
+        margin-right: 6px;
+        box-shadow: 0 0 6px var(--green);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
+    .status-id { color: var(--cyan); }
+
+    .chat-container {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        height: 520px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .bracket {
+        position: absolute;
+        width: 12px; height: 12px;
+        border-color: var(--cyan);
+        border-style: solid;
+        opacity: 0.5;
+        z-index: 20;
+    }
+    .bracket.tl { top: 0; left: 0; border-width: 1px 0 0 1px; }
+    .bracket.tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
+    .bracket.bl { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+    .bracket.br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+    .chat-header {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface2);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .avatar {
+        width: 38px; height: 38px;
+        border-radius: 50%;
+        border: 1px solid var(--border-bright);
+        background: var(--cyan-dim);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 0 16px rgba(0,200,255,0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .avatar::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: conic-gradient(transparent 270deg, var(--cyan) 360deg);
+        animation: spin 4s linear infinite;
+        opacity: 0.4;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .avatar-inner {
+        position: absolute;
+        inset: 3px;
+        border-radius: 50%;
+        background: var(--surface2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--cyan);
+    }
+
+    .header-info h2 {
+        font-family: var(--mono);
+        font-size: 14px;
+        font-weight: 400;
+        color: var(--cyan);
+        letter-spacing: 0.08em;
+        text-shadow: 0 0 12px rgba(0,200,255,0.5);
+    }
+
+    .header-info p {
+        font-size: 10px;
+        color: var(--text-dim);
+        font-family: var(--mono);
+        margin-top: 2px;
+    }
+
+    .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .level-select {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 5px 10px;
+        background: var(--bg);
+        border: 1px solid var(--border-bright);
+        color: var(--cyan);
+        border-radius: 4px;
+        cursor: pointer;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+
+    .level-select option {
+        background: var(--bg);
+        color: var(--text);
+    }
+
+    .icon-btn {
+        width: 30px; height: 30px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text-dim);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        font-size: 13px;
+    }
+
+    .icon-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .icon-btn.red:hover { border-color: var(--red); color: var(--red); }
+
+    .chat-box {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        background: var(--bg);
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+    }
+
+    .chat-box::-webkit-scrollbar { width: 4px; }
+    .chat-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .empty-state {
+        margin: auto;
+        text-align: center;
+        color: var(--text-dim);
+        font-family: var(--mono);
+        font-size: 11px;
+        line-height: 2;
+    }
+
+    .empty-state .big {
+        font-size: 28px;
+        opacity: 0.15;
+        margin-bottom: 8px;
+    }
+
+    .message-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        animation: fadeUp 0.3s ease forwards;
+        opacity: 0;
+    }
+
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-row.user { flex-direction: row-reverse; }
+
+    .msg-avatar {
+        width: 26px; height: 26px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--mono);
+        font-size: 9px;
+        flex-shrink: 0;
+        letter-spacing: 0.05em;
+    }
+
+    .msg-avatar.patient {
+        background: var(--cyan-dim);
+        border: 1px solid var(--border-bright);
+        color: var(--cyan);
+    }
+
+    .msg-avatar.student {
+        background: var(--green-dim);
+        border: 1px solid rgba(0,255,176,0.3);
+        color: var(--green);
+    }
+
+    .message {
+        max-width: 78%;
+        padding: 10px 14px;
+        font-size: 13px;
+        line-height: 1.6;
+        position: relative;
+    }
+
+    .message.bot {
+        background: var(--surface2);
+        border: 1px solid var(--border-bright);
+        border-radius: 0 8px 8px 8px;
+        color: var(--text);
+    }
+
+    .message.bot::before {
+        content: 'AI PATIENT';
+        display: block;
+        font-family: var(--mono);
+        font-size: 9px;
+        color: var(--cyan);
+        margin-bottom: 5px;
+        letter-spacing: 0.1em;
+    }
+
+    .message.user {
+        background: rgba(0,255,176,0.06);
+        border: 1px solid rgba(0,255,176,0.2);
+        border-radius: 8px 0 8px 8px;
+        color: var(--text);
+    }
+
+    .message.user::before {
+        content: 'CLINICIAN';
+        display: block;
+        font-family: var(--mono);
+        font-size: 9px;
+        color: var(--green);
+        margin-bottom: 5px;
+        letter-spacing: 0.1em;
+    }
+
+    .bottom-panel {
+        border-top: 1px solid var(--border);
+        background: var(--surface2);
+    }
+
+    .input-row {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        gap: 10px;
+    }
+
+    .input-prefix {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--cyan);
+        opacity: 0.6;
+        flex-shrink: 0;
+    }
+
+    .chat-input {
+        flex: 1;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 9px 14px;
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 12px;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        caret-color: var(--cyan);
+    }
+
+    .chat-input::placeholder { color: var(--text-dim); }
+
+    .chat-input:focus {
+        border-color: var(--border-bright);
+        box-shadow: 0 0 0 2px rgba(0,200,255,0.08);
+    }
+
+    .send-btn {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 9px 16px;
+        background: linear-gradient(135deg, rgba(0,200,255,0.15), rgba(0,200,255,0.05));
+        border: 1px solid var(--border-bright);
+        color: var(--cyan);
+        border-radius: 4px;
+        cursor: pointer;
+        letter-spacing: 0.1em;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .send-btn:hover {
+        background: rgba(0,200,255,0.2);
+        box-shadow: 0 0 16px rgba(0,200,255,0.2);
+    }
+
+    .footer-bar {
+        padding: 5px 16px 8px;
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--mono);
+        font-size: 9px;
+        color: var(--text-dim);
+    }
+
+    .thinking {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--cyan);
+        opacity: 0.6;
+    }
+
+    .thinking span {
+        display: inline-block;
+        width: 4px; height: 4px;
+        border-radius: 50%;
+        background: var(--cyan);
+        animation: blink 1.2s ease-in-out infinite;
+    }
+
+    .thinking span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes blink {
+        0%, 100% { opacity: 0.2; transform: scale(0.8); }
+        50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .sys-bar {
+        font-family: var(--mono);
+        font-size: 9px;
+        color: var(--text-dim);
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        letter-spacing: 0.05em;
+    }
+
+    #clock { color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="shell">
+
+    <div class="status-bar">
+        <span><span class="status-dot"></span>SYSTEM IS ONLINE</span>
+        <span class="status-id" id="sessionLabel">SESSION::--</span>
+    </div>
+
+    <div class="chat-container">
+        <div class="bracket tl"></div>
+        <div class="bracket tr"></div>
+        <div class="bracket bl"></div>
+        <div class="bracket br"></div>
+
+        <div class="chat-header">
+            <div class="header-left">
+                <div class="avatar">
+                    <div class="avatar-inner">PT</div>
+                </div>
+                <div class="header-info">
+                    <img 
+                    src="https://www.royalholloway.ac.uk/images/logoRoyalHolloway2x.png"
+         alt="Royal Holloway, University of London"
+        style="height: 36px; width: auto; margin-bottom: 14px; opacity: 0.85;"
+        >
+                    <h2>CARE TOOL</h2>
+                    <p>CLINICAL TRAINING TOOL</p>
+                </div>
+            </div>
+            <div class="header-controls">
+                <select class="level-select" id="level">
+                    <option value="beginner">UG</option>
+                    <option value="intermediate">MSC</option>
+                    <option value="advanced">PGR</option>
+                </select>
+                <button class="icon-btn" onclick="exportChat()" title="Export transcript">⬇</button>
+                <button class="icon-btn red" onclick="logout()" title="Logout"> 🔒 </button>
+            </div>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            <div class="empty-state" id="emptyState">
+                <div class="big">⬡</div>
+                <div>CARE TOOL LOADED</div>
+                <div style="opacity:0.5">BEGIN</div>
+            </div>
+        </div>
+
+        <div class="bottom-panel">
+            <div class="input-row">
+                <span class="input-prefix">&gt;_</span>
+                <input class="chat-input" id="userInput" placeholder="Enter clinical response..." onkeydown="handleEnter(event)">
+                <button class="send-btn" onclick="sendChat()">SEND</button>
+            </div>
+            <div class="footer-bar">
+                <span id="thinkingArea"></span>
+                <span>TOKENS: <span id="tokenCount">0</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="sys-bar">
+        <span>PRODUCT OF RHUL DCLIN</span>
+        <span id="clock"></span>
+    </div>
+
+</div>
+
+<script>
+let token = localStorage.getItem("token");
+if (!token) window.location.href = "/";
+
+let sessionId = null;
+let transcript = [];
+let tokenCount = 0;
+
+function updateClock() {
+    const now = new Date();
+    document.getElementById("clock").textContent =
+        now.toISOString().replace("T", " ").substring(0, 19) + " UTC";
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+function logout() {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+}
+
+function handleEnter(e) {
+    if (e.key === "Enter") sendChat();
+}
+
+function setThinking(active) {
+    const el = document.getElementById("thinkingArea");
+    el.innerHTML = active
+        ? '<span class="thinking"><span></span><span></span><span></span> TYPING </span>'
+        : '';
+}
+
+function addMessage(text, sender) {
+    const chatBox = document.getElementById("chatBox");
+
+    const empty = document.getElementById("emptyState");
+    if (empty) empty.remove();
+
+    const row = document.createElement("div");
+    row.className = `message-row ${sender === "user" ? "user" : "bot"}`;
+
+    const av = document.createElement("div");
+    av.className = `msg-avatar ${sender === "user" ? "student" : "patient"}`;
+    av.textContent = sender === "user" ? "STU" : "PT";
+
+    const msg = document.createElement("div");
+    msg.className = `message ${sender === "user" ? "user" : "bot"}`;
+    msg.innerText = text;
+
+    row.appendChild(av);
+    row.appendChild(msg);
+    chatBox.appendChild(row);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    tokenCount += Math.ceil(text.length / 4);
+    document.getElementById("tokenCount").textContent = tokenCount.toLocaleString();
+}
+
+function exportChat() {
+    const blob = new Blob([transcript.join("\n")], {type: "text/plain"});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "session_transcript.txt";
+    link.click();
+}
+
+async function sendChat() {
+    const input = document.getElementById("userInput");
+    const level = document.getElementById("level").value;
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage(message, "user");
+    transcript.push("Student: " + message);
+    input.value = "";
+    setThinking(true);
+
+    try {
+        const response = await fetch("/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({
+                level: level,
+                user_input: message,
+                session_id: sessionId
+            })
+        });
+
+        if (response.status === 401) {
+            logout();
+            return;
+        }
+
+        const data = await response.json();
+        sessionId = data.session_id;
+        document.getElementById("sessionLabel").textContent = "SESSION::" + sessionId.substring(0, 8).toUpperCase();
+        setThinking(false);
+        addMessage(data.reply, "bot");
+        transcript.push("Patient: " + data.reply);
+
+    } catch (error) {
+        setThinking(false);
+        console.error("Error:", error);
+    }
+}
+</script>
+
+</body>
+</html>

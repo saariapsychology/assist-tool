@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:,">
+<title>Consent & Disclaimer — CARE TOOL</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: #070b14;
+        --surface: #0d1526;
+        --surface2: #111d35;
+        --border: rgba(0,200,255,0.12);
+        --border-bright: rgba(0,200,255,0.4);
+        --cyan: #00c8ff;
+        --cyan-dim: rgba(0,200,255,0.15);
+        --green: #00ffb0;
+        --red: #ff4060;
+        --red-dim: rgba(255,64,96,0.1);
+        --text: #c8deff;
+        --text-dim: #4a6080;
+        --mono: 'Share Tech Mono', monospace;
+        --sans: 'DM Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: var(--sans);
+        background: var(--bg);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 32px 16px;
+        color: var(--text);
+    }
+
+    body::before {
+        content: '';
+        position: fixed; inset: 0;
+        background-image:
+            linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        z-index: 0; pointer-events: none;
+    }
+
+    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 500px; height: 500px; background: rgba(0,100,200,0.08); top: -150px; left: -150px; }
+    .orb-2 { width: 400px; height: 400px; background: rgba(0,200,150,0.06); bottom: -100px; right: -100px; }
+
+    .shell {
+        position: relative; z-index: 10;
+        width: 100%; max-width: 680px;
+        display: flex; flex-direction: column;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+        font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 6px 14px;
+        background: var(--surface); border: 1px solid var(--border);
+        border-bottom: none; border-radius: 8px 8px 0 0;
+        letter-spacing: 0.05em;
+    }
+    .status-dot {
+        display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+        background: var(--green); margin-right: 6px;
+        box-shadow: 0 0 6px var(--green);
+        animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ── Panel ── */
+    .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 32px 36px 28px;
+        position: relative;
+    }
+
+    .bracket { position: absolute; width: 12px; height: 12px; border-color: var(--cyan); border-style: solid; opacity: 0.4; }
+    .bracket.tl { top: 0; left: 0; border-width: 1px 0 0 1px; }
+    .bracket.tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
+    .bracket.bl { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+    .bracket.br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+    /* ── Header ── */
+    .header {
+        display: flex; align-items: center; gap: 16px;
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .header img { height: 32px; opacity: 0.85; }
+
+    .header-text h1 {
+        font-family: var(--mono); font-size: 14px; font-weight: 400;
+        color: var(--cyan); letter-spacing: 0.1em;
+        text-shadow: 0 0 12px rgba(0,200,255,0.3);
+    }
+
+    .header-text p {
+        font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+        letter-spacing: 0.08em; margin-top: 3px;
+    }
+
+    /* ── Disclaimer box ── */
+    .disclaimer-box {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 20px 22px;
+        max-height: 340px;
+        overflow-y: auto;
+        margin-bottom: 24px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+    }
+    .disclaimer-box::-webkit-scrollbar { width: 4px; }
+    .disclaimer-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .disclaimer-box h2 {
+        font-family: var(--mono); font-size: 11px; color: var(--cyan);
+        letter-spacing: 0.1em; margin-bottom: 14px;
+    }
+
+    .disclaimer-box p {
+        font-size: 13px; line-height: 1.75; color: var(--text);
+        margin-bottom: 14px;
+    }
+
+    .disclaimer-box p:last-child { margin-bottom: 0; }
+
+    .disclaimer-box strong {
+        color: var(--cyan); font-weight: 500;
+    }
+
+    .disclaimer-box .section-title {
+        font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+        letter-spacing: 0.12em; margin: 18px 0 8px;
+    }
+
+    /* Scroll indicator */
+    .scroll-hint {
+        font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+        text-align: right; margin-bottom: 16px; letter-spacing: 0.06em;
+        transition: opacity 0.3s;
+    }
+    .scroll-hint.hidden { opacity: 0; }
+
+    /* ── Consent checkbox ── */
+    .consent-row {
+        display: flex; align-items: flex-start; gap: 12px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+        cursor: pointer;
+        transition: border-color 0.2s;
+    }
+    .consent-row:hover { border-color: var(--border-bright); }
+    .consent-row.checked { border-color: rgba(0,255,176,0.4); }
+
+    .consent-row input[type="checkbox"] {
+        width: 16px; height: 16px; flex-shrink: 0;
+        margin-top: 2px; cursor: pointer;
+        accent-color: var(--green);
+    }
+
+    .consent-row label {
+        font-size: 12px; line-height: 1.6; color: var(--text);
+        cursor: pointer;
+    }
+
+    /* ── Buttons ── */
+    .btn-row {
+        display: flex; gap: 12px;
+    }
+
+    .btn-proceed {
+        flex: 1; padding: 12px;
+        font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+        background: linear-gradient(135deg, rgba(0,200,255,0.15), rgba(0,200,255,0.05));
+        border: 1px solid var(--border-bright); color: var(--cyan);
+        border-radius: 4px; cursor: pointer; transition: all 0.2s;
+        text-shadow: 0 0 8px rgba(0,200,255,0.4);
+        opacity: 0.4; pointer-events: none;
+    }
+    .btn-proceed.active {
+        opacity: 1; pointer-events: auto;
+    }
+    .btn-proceed.active:hover {
+        background: rgba(0,200,255,0.22);
+        box-shadow: 0 0 20px rgba(0,200,255,0.2);
+    }
+
+    .btn-decline {
+        padding: 12px 20px;
+        font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+        background: var(--red-dim); border: 1px solid rgba(255,64,96,0.3);
+        color: var(--red); border-radius: 4px; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-decline:hover { background: rgba(255,64,96,0.2); }
+
+    /* ── Footer bar ── */
+    .sys-bar {
+        font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+        display: flex; justify-content: space-between;
+        padding: 5px 14px;
+        background: var(--surface); border: 1px solid var(--border);
+        border-top: none; border-radius: 0 0 8px 8px;
+        letter-spacing: 0.05em;
+    }
+    #clock { color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="shell">
+
+    <div class="status-bar">
+        <span><span class="status-dot"></span>SYSTEM IS ONLINE</span>
+        <span style="color:var(--cyan);">CONSENT REQUIRED</span>
+    </div>
+
+    <div class="panel">
+        <div class="bracket tl"></div><div class="bracket tr"></div>
+        <div class="bracket bl"></div><div class="bracket br"></div>
+
+        <div class="header">
+            <img src="https://www.royalholloway.ac.uk/images/logoRoyalHolloway2x.png" alt="Royal Holloway, University of London">
+            <div class="header-text">
+                <h1>PATIENT SIMULATOR — PARTICIPANT INFORMATION & CONSENT</h1>
+                <p>PLEASE READ CAREFULLY BEFORE PROCEEDING</p>
+            </div>
+        </div>
+
+        <div class="disclaimer-box" id="disclaimerBox">
+
+            <h2>WHAT IS THIS TOOL?</h2>
+            <p>
+                This is an AI-powered <strong>Patient Simulator</strong> developed by the DClin programme at
+                Royal Holloway, University of London. It is designed as a <strong>clinical training tool</strong>
+                to help trainee clinical psychologists practise patient interactions in a safe, simulated environment.
+            </p>
+
+            <div class="section-title">PURPOSE OF USE</div>
+            <p>
+                The simulator presents an AI-generated virtual patient. You are expected to engage with this
+                patient as you would in a real clinical encounter, practising assessment, formulation, and
+                therapeutic communication skills appropriate to your training level.
+            </p>
+
+            <div class="section-title">DATA & RECORDING</div>
+            <p>
+                All conversations conducted within this tool are <strong>recorded and stored</strong>.
+                Your supervisor may review session transcripts as part of your clinical training and assessment.
+                By using this tool, you consent to your session data being accessed by your assigned supervisor
+                and programme staff for training and evaluation purposes.
+            </p>
+
+            <div class="section-title">LIMITATIONS OF THE TOOL</div>
+            <p>
+                This tool uses a <strong>large language model (AI)</strong> to generate patient responses.
+                The simulated patient is not a real person. Responses may occasionally be inaccurate, inconsistent,
+                or not reflect clinical reality. This tool is a <strong>supplement to</strong> — not a replacement
+                for — supervised clinical practice, case discussions, and real patient contact.
+            </p>
+
+            <div class="section-title">APPROPRIATE USE</div>
+            <p>
+                This tool is for <strong>authorised students of the DClin programme only</strong>.
+                You must not share your login credentials with others. You must not attempt to use this tool
+                for any purpose outside of your clinical training.
+            </p>
+
+            <div class="section-title">WELLBEING</div>
+            <p>
+                If at any point you find content generated by this tool distressing, please stop the session
+                and speak with your supervisor or personal tutor. Support is available through the programme
+                and the University's student wellbeing services.
+            </p>
+
+            <div class="section-title">CONTACT</div>
+            <p>
+                If you have any questions or concerns about this tool, please contact the programme team at
+                <strong>psytechoperations@rhul.ac.uk</strong>.
+            </p>
+
+        </div>
+
+        <div class="scroll-hint" id="scrollHint">↓ SCROLL TO READ FULL DISCLAIMER</div>
+
+        <div class="consent-row" id="consentRow" onclick="toggleConsent()">
+            <input type="checkbox" id="consentBox">
+            <label for="consentBox">
+                I confirm that I have read and understood the above information. I consent to my session data
+                being recorded and reviewed by my supervisor and programme staff for training purposes.
+                I understand the limitations of this AI tool and agree to use it appropriately.
+            </label>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-proceed" id="proceedBtn" onclick="proceed()">
+                I CONSENT — ENTER SIMULATOR
+            </button>
+            <button class="btn-decline" onclick="decline()">DECLINE</button>
+        </div>
+
+    </div>
+
+    <div class="sys-bar">
+        <span>PRODUCT OF DCLIN RHUL</span>
+        <span id="clock"></span>
+    </div>
+
+</div>
+
+<script>
+var token = localStorage.getItem("token");
+if (!token) { window.location.href = "/"; }
+
+// Clock
+function updateClock() {
+    var now = new Date();
+    document.getElementById("clock").textContent =
+        now.toISOString().replace("T", " ").substring(0, 19) + " UTC";
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// Scroll detection — hide hint once user has scrolled near the bottom
+var box = document.getElementById("disclaimerBox");
+var hint = document.getElementById("scrollHint");
+
+box.addEventListener("scroll", function() {
+    var nearBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 40;
+    if (nearBottom) { hint.classList.add("hidden"); }
+});
+
+// Checkbox toggle
+function toggleConsent() {
+    var cb = document.getElementById("consentBox");
+    var row = document.getElementById("consentRow");
+    var btn = document.getElementById("proceedBtn");
+    cb.checked = !cb.checked;
+    row.classList.toggle("checked", cb.checked);
+    btn.classList.toggle("active", cb.checked);
+}
+
+// Proceed to chat
+function proceed() {
+    var cb = document.getElementById("consentBox");
+    if (!cb.checked) { return; }
+    window.location.href = "/chat-page";
+}
+
+// Decline — log out and return to login
+function decline() {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+}
+</script>
+
+</body>
+</html>

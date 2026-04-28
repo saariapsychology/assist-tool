@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:,">
+<title>Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: #070b14;
+        --surface: #0d1526;
+        --surface2: #111d35;
+        --border: rgba(0,200,255,0.12);
+        --border-bright: rgba(0,200,255,0.4);
+        --cyan: #00c8ff;
+        --cyan-dim: rgba(0,200,255,0.15);
+        --green: #00ffb0;
+        --green-dim: rgba(0,255,176,0.08);
+        --red: #ff4060;
+        --red-dim: rgba(255,64,96,0.1);
+        --amber: #ffb020;
+        --amber-dim: rgba(255,176,32,0.1);
+        --text: #c8deff;
+        --text-dim: #4a6080;
+        --mono: 'Share Tech Mono', monospace;
+        --sans: 'DM Sans', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--sans); background: var(--bg); min-height: 100vh; color: var(--text); padding: 32px 24px; }
+    body::before {
+        content: ''; position: fixed; inset: 0;
+        background-image: linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+        background-size: 40px 40px; z-index: 0; pointer-events: none;
+    }
+    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 500px; height: 500px; background: rgba(0,100,200,0.07); top: -150px; left: -150px; }
+    .orb-2 { width: 400px; height: 400px; background: rgba(0,200,150,0.05); bottom: -100px; right: -100px; }
+    .page { position: relative; z-index: 10; max-width: 860px; margin: 0 auto; }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 24px; }
+    .topbar-left { display: flex; align-items: center; gap: 14px; }
+    .topbar img { height: 28px; opacity: 0.85; }
+    .topbar-title { font-family: var(--mono); font-size: 13px; color: var(--cyan); letter-spacing: 0.1em; text-shadow: 0 0 10px rgba(0,200,255,0.4); }
+    .topbar-sub { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 0.08em; margin-top: 2px; }
+    .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 6px; box-shadow: 0 0 6px var(--green); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .logout-btn { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; padding: 6px 14px; background: var(--red-dim); border: 1px solid rgba(255,64,96,0.3); color: var(--red); border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+    .logout-btn:hover { background: rgba(255,64,96,0.2); }
+
+    .section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
+    .section-header { padding: 12px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--cyan); display: flex; align-items: center; justify-content: space-between; }
+    .section-body { padding: 20px; }
+
+    .user-table { width: 100%; border-collapse: collapse; }
+    .user-table th { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 0.1em; text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--border); }
+    .user-table td { padding: 10px 12px; font-size: 12px; border-bottom: 1px solid rgba(0,200,255,0.05); vertical-align: middle; }
+    .user-table tr:last-child td { border-bottom: none; }
+    .user-table tr:hover td { background: rgba(0,200,255,0.02); }
+
+    .badge { font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 3px; display: inline-block; }
+    .badge.administrator { background: var(--amber-dim); border: 1px solid rgba(255,176,32,0.3); color: var(--amber); }
+    .badge.staff         { background: var(--cyan-dim);  border: 1px solid rgba(0,200,255,0.3);  color: var(--cyan); }
+    .badge.student       { background: var(--green-dim); border: 1px solid rgba(0,255,176,0.3);  color: var(--green); }
+
+    .action-btns { display: flex; gap: 6px; }
+    .btn-sm { font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; padding: 4px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; border: 1px solid; }
+    .btn-impersonate { background: var(--cyan-dim); border-color: rgba(0,200,255,0.3); color: var(--cyan); }
+    .btn-impersonate:hover { background: rgba(0,200,255,0.25); }
+    .btn-delete { background: var(--red-dim); border-color: rgba(255,64,96,0.3); color: var(--red); }
+    .btn-delete:hover { background: rgba(255,64,96,0.2); }
+    .btn-self { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 0.1em; }
+    .form-group input, .form-group select { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 8px 12px; color: var(--text); font-family: var(--mono); font-size: 11px; outline: none; transition: border-color 0.2s; caret-color: var(--cyan); }
+    .form-group input::placeholder { color: var(--text-dim); }
+    .form-group input:focus, .form-group select:focus { border-color: var(--border-bright); }
+    .form-group select option { background: var(--bg); }
+    .add-btn { margin-top: 16px; padding: 10px 24px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; background: linear-gradient(135deg, rgba(0,200,255,0.15), rgba(0,200,255,0.05)); border: 1px solid var(--border-bright); color: var(--cyan); border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+    .add-btn:hover { background: rgba(0,200,255,0.22); box-shadow: 0 0 16px rgba(0,200,255,0.15); }
+
+    .reassign-select { font-family: var(--mono); font-size: 10px; padding: 4px 8px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); color: var(--text); outline: none; cursor: pointer; transition: border-color 0.2s; }
+    .reassign-select:focus, .reassign-select:hover { border-color: var(--border-bright); }
+
+    .empty-row { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-align: center; padding: 20px; }
+
+    #toast { position: fixed; bottom: 24px; right: 24px; z-index: 999; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; padding: 10px 18px; border-radius: 4px; transition: opacity 0.3s; opacity: 0; pointer-events: none; }
+    #toast.show { opacity: 1; }
+    #toast.ok  { background: var(--green-dim); border: 1px solid rgba(0,255,176,0.3); color: var(--green); }
+    #toast.err { background: var(--red-dim);   border: 1px solid rgba(255,64,96,0.3);  color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="page">
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <img src="https://www.royalholloway.ac.uk/images/logoRoyalHolloway2x.png" alt="Royal Holloway">
+            <div>
+                <div class="topbar-title"><span class="status-dot"></span>ADMIN PANEL</div>
+                <div class="topbar-sub"> CARE TOOL · USER MANAGEMENT</div>
+            </div>
+        </div>
+        <button class="logout-btn" onclick="logout()">LOGOUT</button>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span>USER REGISTRY</span>
+            <span id="userCount" style="color:var(--text-dim);font-size:9px;">LOADING...</span>
+        </div>
+        <div class="section-body" style="padding:0;">
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>USERNAME</th>
+                        <th>ROLE</th>
+                        <th>SUPERVISOR</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    <tr><td colspan="4" class="empty-row">LOADING USERS...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">ADD NEW USER</div>
+        <div class="section-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>USERNAME</label>
+                    <input type="text" id="newUsername" placeholder="e.g. jsmith">
+                </div>
+                <div class="form-group">
+                    <label>PASSWORD</label>
+                    <input type="password" id="newPassword" placeholder="Temporary password">
+                </div>
+                <div class="form-group">
+                    <label>ROLE</label>
+                    <select id="newRole" onchange="togglePiField()">
+                        <option value="student">Student</option>
+                        <option value="staff">Staff</option>
+                        <option value="administrator">Administrator</option>
+                    </select>
+                </div>
+                <div class="form-group" id="piGroup">
+                    <label>ASSIGN TO SUPERVISOR (students only)</label>
+                    <select id="newPi">
+                        <option value="">— No supervisor —</option>
+                    </select>
+                </div>
+            </div>
+            <button class="add-btn" onclick="addUser()">CREATE USER</button>
+        </div>
+    </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+var token = localStorage.getItem("token");
+var currentUsername = null;
+var allUsers = [];
+
+if (!token) { window.location.href = "/"; }
+
+// Restore admin token if returning from impersonation
+var savedAdmin = localStorage.getItem("adminToken");
+if (savedAdmin) {
+    localStorage.setItem("token", savedAdmin);
+    localStorage.removeItem("adminToken");
+    token = savedAdmin;
+}
+
+function auth() {
+    return { "Authorization": "Bearer " + token };
+}
+
+async function init() {
+    try {
+        var res = await fetch("/me", { headers: auth() });
+        if (!res.ok) { logout(); return; }
+        var me = await res.json();
+        if (me.role !== "administrator") { window.location.href = "/chat-page"; return; }
+        currentUsername = me.username;
+        loadUsers();
+    } catch(e) { logout(); }
+}
+
+async function loadUsers() {
+    try {
+        var res = await fetch("/users", { headers: auth() });
+        if (res.status === 401) { logout(); return; }
+        allUsers = await res.json();
+
+        document.getElementById("userCount").textContent = allUsers.length + " USERS";
+
+        var staffUsers = allUsers.filter(function(u) { return u.role === "staff"; });
+
+        var piSelect = document.getElementById("newPi");
+        piSelect.innerHTML = '<option value="">— No supervisor —</option>';
+        staffUsers.forEach(function(s) {
+            var opt = document.createElement("option");
+            opt.value = s.username;
+            opt.textContent = s.username;
+            piSelect.appendChild(opt);
+        });
+
+        var tbody = document.getElementById("userTableBody");
+        tbody.innerHTML = "";
+
+        if (allUsers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-row">NO USERS FOUND</td></tr>';
+            return;
+        }
+
+        allUsers.forEach(function(u) {
+            var isSelf = (u.username === currentUsername);
+            var isStudent = (u.role === "student");
+
+            var supervisorCell;
+            if (isStudent) {
+                var opts = '<option value="">— None —</option>';
+                staffUsers.forEach(function(s) {
+                    var sel = (u.pi_username === s.username) ? " selected" : "";
+                    opts += '<option value="' + s.username + '"' + sel + '>' + s.username + '</option>';
+                });
+                supervisorCell = '<select class="reassign-select" onchange="reassignSupervisor(\'' + u.username + '\', this.value)">' + opts + '</select>';
+            } else {
+                supervisorCell = '<span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);">—</span>';
+            }
+
+            var impClass = "btn-sm btn-impersonate" + (isSelf ? " btn-self" : "");
+            var delClass = "btn-sm btn-delete" + (isSelf ? " btn-self" : "");
+            var impClick = isSelf ? "" : "impersonate('" + u.username + "', '" + u.role + "')";
+            var delClick = isSelf ? "" : "deleteUser('" + u.username + "')";
+            var impDis   = isSelf ? "disabled" : "";
+            var delDis   = isSelf ? "disabled" : "";
+
+            var tr = document.createElement("tr");
+            tr.innerHTML =
+                '<td style="font-family:var(--mono);font-size:12px;">' + u.username + '</td>' +
+                '<td><span class="badge ' + u.role + '">' + u.role.toUpperCase() + '</span></td>' +
+                '<td>' + supervisorCell + '</td>' +
+                '<td><div class="action-btns">' +
+                    '<button class="' + impClass + '" onclick="' + impClick + '" ' + impDis + '>LOGIN AS</button>' +
+                    '<button class="' + delClass + '" onclick="' + delClick + '" ' + delDis + '>DELETE</button>' +
+                '</div></td>';
+            tbody.appendChild(tr);
+        });
+
+    } catch(e) {
+        console.error(e);
+        showToast("Failed to load users", "err");
+    }
+}
+
+function togglePiField() {
+    var role = document.getElementById("newRole").value;
+    var piGroup = document.getElementById("piGroup");
+    var piSelect = document.getElementById("newPi");
+    piGroup.style.opacity = (role === "student") ? "1" : "0.3";
+    piSelect.disabled = (role !== "student");
+}
+
+async function reassignSupervisor(username, newPi) {
+    try {
+        var res = await fetch("/users/" + username + "/supervisor", {
+            method: "PATCH",
+            headers: Object.assign({ "Content-Type": "application/json" }, auth()),
+            body: JSON.stringify({ pi_username: newPi || null })
+        });
+        var data = await res.json();
+        if (!res.ok) { showToast(data.detail || "Error updating supervisor", "err"); return; }
+        showToast(username + " assigned to " + (newPi || "no supervisor"), "ok");
+    } catch(e) { showToast("Network error", "err"); }
+}
+
+async function addUser() {
+    var username = document.getElementById("newUsername").value.trim();
+    var password = document.getElementById("newPassword").value.trim();
+    var role     = document.getElementById("newRole").value;
+    var piEl     = document.getElementById("newPi");
+    var pi       = (role === "student" && piEl.value) ? piEl.value : null;
+
+    if (!username || !password) { showToast("Username and password required", "err"); return; }
+
+    try {
+        var res = await fetch("/users", {
+            method: "POST",
+            headers: Object.assign({ "Content-Type": "application/json" }, auth()),
+            body: JSON.stringify({ username: username, password: password, role: role, pi_username: pi })
+        });
+        var data = await res.json();
+        if (!res.ok) { showToast(data.detail || "Error creating user", "err"); return; }
+        showToast("User '" + username + "' created" + (pi ? " under " + pi : ""), "ok");
+        document.getElementById("newUsername").value = "";
+        document.getElementById("newPassword").value = "";
+        document.getElementById("newPi").value = "";
+        loadUsers();
+    } catch(e) { showToast("Network error", "err"); }
+}
+
+async function deleteUser(username) {
+    if (!confirm('Delete user "' + username + '"? This cannot be undone.')) return;
+    try {
+        var res = await fetch("/users/" + username, {
+            method: "DELETE",
+            headers: auth()
+        });
+        var data = await res.json();
+        if (!res.ok) { showToast(data.detail || "Error deleting user", "err"); return; }
+        showToast("User '" + username + "' deleted", "ok");
+        loadUsers();
+    } catch(e) { showToast("Network error", "err"); }
+}
+
+async function impersonate(username, role) {
+    try {
+        var res = await fetch("/impersonate/" + username, {
+            method: "POST",
+            headers: auth()
+        });
+        var data = await res.json();
+        if (!res.ok) { showToast(data.detail || "Error", "err"); return; }
+        localStorage.setItem("adminToken", token);
+        localStorage.setItem("token", data.access_token);
+        showToast("Logging in as " + username + "...", "ok");
+        setTimeout(function() {
+            window.location.href = (role === "staff") ? "/supervisor-page" : "/chat-page";
+        }, 800);
+    } catch(e) { showToast("Network error", "err"); }
+}
+
+function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("adminToken");
+    window.location.href = "/";
+}
+
+function showToast(msg, type) {
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = "show " + type;
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(function() { t.className = ""; }, 3000);
+}
+
+init();
+</script>
+</body>
+</html>
