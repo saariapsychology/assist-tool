@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-jose
+passlib[bcrypt]
+python-multipart
+python-dotenv
+openai
+soundfile
+sqlalchemy
